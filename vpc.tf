@@ -9,9 +9,19 @@ variable public_subnet_cidr_blocks {}
 data "aws_availability_zones" "available" {}
 
 
+locals {
+  cluster_name = "test-eks-${random_string.suffix.result}"
+}
+
+resource "random_string" "suffix" {
+  length  = 8
+  special = false
+}
+
+
 module "myapp-vpc" {
     source = "terraform-aws-modules/vpc/aws"
-    version = "2.64.0"
+    version = "3.2.0"
 
     name = "myapp-vpc"
     cidr = var.vpc_cidr_block
@@ -24,16 +34,16 @@ module "myapp-vpc" {
     enable_dns_hostnames = true
 
     tags = {
-        "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
+        "kubernetes.io/cluster/${local.cluster_name}" = "shared"
     }
 
     public_subnet_tags = {
-        "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
+        "kubernetes.io/cluster/${local.cluster_name}" = "shared"
         "kubernetes.io/role/elb" = 1 
     }
 
     private_subnet_tags = {
-        "kubernetes.io/cluster/myapp-eks-cluster" = "shared"
+        "kubernetes.io/cluster/${local.cluster_name}" = "shared"
         "kubernetes.io/role/internal-elb" = 1 
     }
 
