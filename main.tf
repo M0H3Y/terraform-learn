@@ -9,6 +9,9 @@ variable env_prefix {}
 variable my_ip {}
 variable instance_type {}
 variable public_key_location {}
+variable anisble_project_dir {}
+variable private_key_location {}
+
 resource "aws_vpc" "myapp-vpc" {
     cidr_block = var.vpc_cidr_block
     tags =  {
@@ -109,14 +112,12 @@ resource "aws_instance" "myapp-server" {
     availability_zone = var.avail_zone
     associate_public_ip_address = true
     key_name = aws_key_pair.ssh_key.key_name
-    user_data = file("entry-script.sh")
      
 
     tags = {
         Name = "${var.env_prefix}-server"
     }
-
-    
+       
 }
 
 
@@ -147,3 +148,15 @@ output "instance_public_ip" {
    value = aws_instance.myapp-server.public_ip
 }
 
+
+resource "null_resource" "config_server" { 
+    triggers = {
+        trigger = aws_instance.myapp-server.public_ip
+
+    }
+    provisioner "local-exec" {
+        working_dir = var.anisble_project_dir
+        command = "ansible-playbook --inventory ${aws_instance.myapp-server.public_ip}, --private-key ${var.private_key_location} --user ec2-user deploy-docker.yaml "
+    }
+
+}
